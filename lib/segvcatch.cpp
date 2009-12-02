@@ -17,22 +17,6 @@ namespace
 segvcatch::handler handler_segv = 0;
 segvcatch::handler handler_fpe = 0;
 
-#if defined __GNUC__ && __linux
-
-#ifdef __i386__
-#include "i386-signal.h"
-#endif /*__i386__*/
-
-#ifdef __x86_64__
-#include "x86_64-signal.h"
-#endif /*__x86_64__*/
-
-#endif /*defined __GNUC__ && __linux*/
-
-#if defined (HANDLE_SEGV) || defined(HANDLE_FPE)
-
-#include <execinfo.h>
-
 void default_segv()
 {
     throw std::runtime_error("Segmentation violation");
@@ -54,6 +38,22 @@ void handle_fpe()
     if (handler_fpe)
         handler_fpe();
 }
+
+#if defined __GNUC__ && __linux
+
+#ifdef __i386__
+#include "i386-signal.h"
+#endif /*__i386__*/
+
+#ifdef __x86_64__
+#include "x86_64-signal.h"
+#endif /*__x86_64__*/
+
+#endif /*defined __GNUC__ && __linux*/
+
+#if defined (HANDLE_SEGV) || defined(HANDLE_FPE)
+
+#include <execinfo.h>
 
 /* Unblock a signal.  Unless we do this, the signal may only be sent
    once.  */
