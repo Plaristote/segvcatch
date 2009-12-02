@@ -1,0 +1,4 @@
+#!/bin/sh
+
+rm -rf release
+rm -rf debug
