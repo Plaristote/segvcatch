@@ -12,23 +12,24 @@ details.  */
 
 #ifdef __x86_64__
 
-#ifndef JAVA_SIGNAL_H
-#define JAVA_SIGNAL_H 1
+# ifndef JAVA_SIGNAL_H
+#  define JAVA_SIGNAL_H 1
 
-#include <signal.h>
-#include <sys/syscall.h>
+#  include <signal.h>
+#  include <unistd.h>
+#  include <sys/syscall.h>
 
-#define HANDLE_SEGV 1
-#define HANDLE_FPE 1
+#  define HANDLE_SEGV 1
+#  define HANDLE_FPE 1
 
-#define SIGNAL_HANDLER(_name)					\
+#  define SIGNAL_HANDLER(_name)					\
 static void _Jv_##_name (int, siginfo_t *,			\
 			 void *_p __attribute__ ((__unused__)))
 
-#define HANDLE_DIVIDE_OVERFLOW						\
+#  define HANDLE_DIVIDE_OVERFLOW						\
 do									\
 {									\
-  struct ucontext *_uc = (struct ucontext *)_p;				\
+  ucontext_t *_uc = (ucontext_t *)_p;					\
   gregset_t &_gregs = _uc->uc_mcontext.gregs;				\
   unsigned char *_rip = (unsigned char *)_gregs[REG_RIP];		\
 									\
@@ -114,10 +115,10 @@ extern "C"
   };
 }
 
-#define MAKE_THROW_FRAME(_exception)
+#  define MAKE_THROW_FRAME(_exception)
 
-#define RESTORE(name, syscall) RESTORE2 (name, syscall)
-#define RESTORE2(name, syscall)			\
+#  define RESTORE(name, syscall) RESTORE2 (name, syscall)
+#  define RESTORE2(name, syscall)			\
 asm						\
   (						\
    ".text\n"					\
@@ -133,7 +134,7 @@ RESTORE (restore_rt, __NR_rt_sigreturn)
 void restore_rt (void) asm ("__restore_rt")
   __attribute__ ((visibility ("hidden")));
 
-#define INIT_SEGV						\
+#  define INIT_SEGV						\
 do								\
   {								\
     struct kernel_sigaction act;				\
@@ -145,7 +146,7 @@ do								\
   }								\
 while (0)  
 
-#define INIT_FPE						\
+#  define INIT_FPE						\
 do								\
   {								\
     struct kernel_sigaction act;				\
@@ -169,13 +170,13 @@ while (0)
  * syscall(SYS_sigaction) causes our handler to be called directly
  * by the kernel, bypassing any wrappers.  */
 
-#endif /* JAVA_SIGNAL_H */
+# endif /* JAVA_SIGNAL_H */
 
-#else /* __x86_64__ */
+# else /* __x86_64__ */
 
 /* This is for the 32-bit subsystem on x86-64.  */
 
-#define sigcontext_struct sigcontext
-#include <java-signal-aux.h>
+# define sigcontext_struct sigcontext
+# include <java-signal-aux.h>
 
 #endif /* __x86_64__ */
