@@ -32,7 +32,8 @@ jobs:
 
           # Set an output parameter `uname` for use in subsequent steps
           run: |
-            sudo apt-get install libgtest-dev g++ cmake
+            apt update
+            apt install -y libgtest-dev g++ cmake
             cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
             cd ${{github.workspace}}/build
             ctest -C ${{env.BUILD_TYPE}}
