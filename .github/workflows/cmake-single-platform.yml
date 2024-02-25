@@ -1,0 +1,38 @@
+# This starter workflow is for a CMake project running on a single platform. There is a different starter workflow if you need cross-platform coverage.
+# See: https://github.com/actions/starter-workflows/blob/main/ci/cmake-multi-platform.yml
+name: CMake on a single platform
+
+on:
+  push:
+    branches: [ "main", "testing-on-raspberrypi-aarch64" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  BUILD_TYPE: Release
+
+jobs:
+  aarch64_job:
+    # The host should always be Linux
+    runs-on: ubuntu-22.04
+    name: Build on ubuntu-22.04 aarch64
+    steps:
+      - uses: actions/checkout@v4
+      - uses: uraimo/run-on-arch-action@v2
+        name: Run commands
+        id: runcmd
+        with:
+          arch: aarch64
+          distro: ubuntu22.04
+
+          # Not required, but speeds up builds by storing container images in
+          # a GitHub package registry.
+          githubToken: ${{ github.token }}
+
+          # Set an output parameter `uname` for use in subsequent steps
+          run: |
+            sudo apt-get install libgtest-dev g++ cmake
+            cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+            cd ${{github.workspace}}/build
+            ctest -C ${{env.BUILD_TYPE}}
