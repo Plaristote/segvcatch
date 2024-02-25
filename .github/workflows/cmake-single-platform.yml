@@ -32,8 +32,8 @@ jobs:
 
           # Set an output parameter `uname` for use in subsequent steps
           run: |
-            apt update
-            apt install -y libgtest-dev g++ cmake
+            apt update > /dev/null
+            apt install -y libgtest-dev g++ cmake > /dev/null
             mkdir -p ${{github.workspace}}/build
             cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
             cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
