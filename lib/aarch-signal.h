@@ -27,6 +27,7 @@ extern "C"
 #  define MAKE_THROW_FRAME(_exception)
 
 #  define RESTORE(name, syscall) RESTORE2 (name, syscall)
+#ifdef __aarch64__
 #  define RESTORE2(name, syscall)			\
 asm						\
   (						\
@@ -37,6 +38,17 @@ asm						\
    "	mov x8, " #syscall "\n"		\
    "	svc 0\n"				\
    );
+#else
+#  define RESTORE2(name, syscall)			\
+asm						\
+  (						\
+   ".text\n"					\
+   ".align 16\n"				\
+   "__" #name ":\n"				\
+   "	mov r7, " #syscall "\n"		\
+   "	swi 0\n"				\
+   );
+#endif
 
 /* The return code for realtime-signals.  */
 RESTORE (asm_restore_rt, __NR_rt_sigreturn)
