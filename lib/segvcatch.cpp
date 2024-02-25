@@ -90,7 +90,11 @@ SIGNAL_HANDLER(catch_segv)
     MAKE_THROW_FRAME(nullp);
     ucontext_t *context = (ucontext_t *)_p;
 
+#ifdef __aarch64__
     context->uc_mcontext.pc = (uintptr_t)in_context_signal_handler;
+#else
+    context->uc_mcontext.arm_pc = (uintptr_t)in_context_signal_handler;
+#endif
 }
 #else
 SIGNAL_HANDLER(catch_segv)
