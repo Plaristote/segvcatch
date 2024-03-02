@@ -5,6 +5,7 @@
  ***************************************************************************/
 
 #include "segvcatch.h"
+#include "exceptdefs.h"
 
 #include <string>
 #include <stdexcept>
@@ -33,26 +34,26 @@ segvcatch::handler handler_fpe = 0;
 
 #endif /*defined __GNUC__ && __linux*/
 
-void default_segv()
+void default_segv(const segvcatch::hardware_exception_info& info)
 {
-    throw std::runtime_error("Segmentation fault");
+    throw segvcatch::segmentation_fault("Segmentation fault", info);
 }
 
-void default_fpe()
+void default_fpe(const segvcatch::hardware_exception_info& info)
 {
-    throw std::runtime_error("Floating-point exception");
+    throw segvcatch::floating_point_error("Floating point error", info);
 }
 
-void handle_segv()
+void handle_segv(const segvcatch::hardware_exception_info& info)
 {
     if (handler_segv)
-        handler_segv();
+        handler_segv(info);
 }
 
-void handle_fpe()
+void handle_fpe(const segvcatch::hardware_exception_info& info)
 {
     if (handler_fpe)
-        handler_fpe();
+        handler_fpe(info);
 }
 
 #if defined (HANDLE_SEGV) || defined(HANDLE_FPE)
@@ -97,11 +98,51 @@ SIGNAL_HANDLER(catch_segv)
 #endif
 }
 #else
+void *retnptr = nullptr;
+segvcatch::hardware_exception_info hwinfo;
+
+static void call_handle_segv()
+{
+    handle_segv(hwinfo);
+}
+
+static void call_handle_fpe()
+{
+    handle_fpe(hwinfo);
+}
+
+static void __attribute__((naked)) in_context_signal_handler()
+{
+    // save return address
+    asm("push %0\n\n" : "=m"(retnptr) : : "memory");
+
+    // call _handle_segv
+    asm("jmp *%0" : : "r"(call_handle_segv) : "memory");
+
+    asm("int $3\n");
+}
+
+static void __attribute__((naked)) in_context_signal_handler_fpe()
+{
+    // save return address
+    asm("push %0\n\n" : "=m"(retnptr) : : "memory");
+
+    // call _handle_segv
+    asm("jmp *%0" : : "r"(call_handle_fpe) : "memory");
+
+    asm("int $3\n");
+}
+
 SIGNAL_HANDLER(catch_segv)
 {
     unblock_signal(SIGSEGV);
     MAKE_THROW_FRAME(nullp);
-    handle_segv();
+    ucontext_t *context = (ucontext_t *)_p;
+
+    hwinfo.addr = (void *)context->uc_mcontext.gregs[REG_RIP];
+
+    retnptr = (void *)context->uc_mcontext.gregs[REG_RIP];
+    context->uc_mcontext.gregs[REG_RIP] = (greg_t)in_context_signal_handler;
 }
 #endif
 #endif
@@ -116,7 +157,12 @@ SIGNAL_HANDLER(catch_fpe)
 #else
     MAKE_THROW_FRAME(arithexception);
 #endif
-    handle_fpe();
+    ucontext_t *context = (ucontext_t *)_p;
+
+    hwinfo.addr = (void *)context->uc_mcontext.gregs[REG_RIP];
+
+    retnptr = (void *)context->uc_mcontext.gregs[REG_RIP];
+    context->uc_mcontext.gregs[REG_RIP] = (greg_t)in_context_signal_handler_fpe;
 }
 #endif
 
@@ -174,6 +220,15 @@ void init_fpe(handler h)
     SetUnhandledExceptionFilter(win32_exception_handler);
 #endif
 
+}
+
+void causes_segv()
+{
+    *(int *)0 = 0;
+}
+
+void donot_optimize_away(){
+    // Do nothing
 }
 
 }

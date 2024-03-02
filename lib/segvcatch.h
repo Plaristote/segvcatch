@@ -1,3 +1,4 @@
+#pragma once
 /***************************************************************************
  *   Copyright (C) 2009 by VisualData                                      *
  *                                                                         *
@@ -7,6 +8,8 @@
 #ifndef _SEGVCATCH_H
 #define	_SEGVCATCH_H
 
+#include "exceptdefs.h"
+
 /*! \brief segvcatch namespace
 
 
@@ -14,8 +17,10 @@
 namespace segvcatch
 {
 
+void donot_optimize_away();
+
 /*! Signal handler, used to redefine standart exception throwing. */
-typedef void (*handler)();
+typedef void (*handler)(const hardware_exception_info& info);
 
 /*! Initialize segmentation violation handler.
     \param h (optional) - optional user's signal handler. By default used an internal signal handler to throw
