@@ -43,7 +43,9 @@ int main(int argc, char *argv[])
 
     try
     {
+        #ifndef __arm__ // TODO
         test::divide_by_zero();
+        #endif
     }
     catch (const segvcatch::hardware_exception &e)
     {

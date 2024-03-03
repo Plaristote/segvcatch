@@ -76,6 +76,15 @@ static void unblock_signal(int signum __attribute__((__unused__)))
 #ifdef HANDLE_SEGV
 
 #ifdef __ARM_ARCH
+void *retnptr = nullptr;
+segvcatch::hardware_exception_info hwinfo;
+
+static void call_handle_segv()
+{
+    handle_segv(hwinfo);
+}
+
+#ifdef __aarch64__
 static void __attribute__((naked)) in_context_signal_handler()
 {
     handle_segv();
@@ -84,6 +93,16 @@ static void __attribute__((naked)) in_context_signal_handler()
     default_segv();
     asm("");
 }
+#else
+static void __attribute__((naked)) in_context_signal_handler()
+{
+    // save return address
+    asm("ldr r0, %0\npush {r0}\n" : "=m"(retnptr) : : "memory");
+
+    // call _handle_segv
+    asm("mov pc, %0" : : "r"(call_handle_segv) : "memory");
+}
+#endif
 
 SIGNAL_HANDLER(catch_segv)
 {
@@ -92,10 +111,14 @@ SIGNAL_HANDLER(catch_segv)
     ucontext_t *context = (ucontext_t *)_p;
 
 #ifdef __aarch64__
+    retnptr = context->uc_mcontext.pc;
     context->uc_mcontext.pc = (uintptr_t)in_context_signal_handler;
 #else
+    retnptr = reinterpret_cast<void*>(context->uc_mcontext.arm_pc);
     context->uc_mcontext.arm_pc = (uintptr_t)in_context_signal_handler;
 #endif
+
+    hwinfo.addr = retnptr;
 }
 #else
 void *retnptr = nullptr;
@@ -148,7 +171,40 @@ SIGNAL_HANDLER(catch_segv)
 #endif
 
 #ifdef HANDLE_FPE
+#ifdef __ARM_ARCH
 
+static void call_handle_fpe()
+{
+    handle_fpe(hwinfo);
+}
+
+static void __attribute__((naked)) in_context_signal_handler_fpe()
+{
+    // save return address
+    asm("ldr r0, %0\npush {r0}\n" : "=m"(retnptr) : : "memory");
+
+    // call _handle_segv
+    asm("mov pc, %0" : : "r"(call_handle_fpe) : "memory");
+}
+
+SIGNAL_HANDLER(catch_fpe)
+{
+    unblock_signal(SIGFPE);
+    MAKE_THROW_FRAME(nullp);
+    ucontext_t *context = (ucontext_t *)_p;
+
+#ifdef __aarch64__
+    retnptr = context->uc_mcontext.pc;
+    context->uc_mcontext.pc = (uintptr_t)in_context_signal_handler_fpe;
+#else
+    retnptr = reinterpret_cast<void*>(context->uc_mcontext.arm_pc);
+    context->uc_mcontext.arm_pc = (uintptr_t)in_context_signal_handler_fpe;
+#endif
+
+    hwinfo.addr = retnptr;
+    //handle_fpe(hwinfo);
+}
+#else
 SIGNAL_HANDLER(catch_fpe)
 {
     unblock_signal(SIGFPE);
@@ -164,6 +220,7 @@ SIGNAL_HANDLER(catch_fpe)
     retnptr = (void *)context->uc_mcontext.gregs[REG_RIP];
     context->uc_mcontext.gregs[REG_RIP] = (greg_t)in_context_signal_handler_fpe;
 }
+#endif
 #endif
 
 #ifdef WIN32
@@ -222,9 +279,10 @@ void init_fpe(handler h)
 
 }
 
-void causes_segv()
+void volatile causes_segv()
 {
-    *(int *)0 = 0;
+    volatile int* ptr = nullptr;
+    *ptr = 0;
 }
 
 void donot_optimize_away(){
