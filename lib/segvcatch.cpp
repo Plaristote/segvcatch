@@ -87,10 +87,10 @@ static void call_handle_segv()
 #ifdef __aarch64__
 static void __attribute__((naked)) in_context_signal_handler()
 {
-    handle_segv();
+    handle_segv(hwinfo);
 
     // This code should not be executed
-    default_segv();
+    default_segv(hwinfo);
     asm("");
 }
 #else
@@ -111,7 +111,7 @@ SIGNAL_HANDLER(catch_segv)
     ucontext_t *context = (ucontext_t *)_p;
 
 #ifdef __aarch64__
-    retnptr = context->uc_mcontext.pc;
+    retnptr = reinterpret_cast<void*>(context->uc_mcontext.pc);
     context->uc_mcontext.pc = (uintptr_t)in_context_signal_handler;
 #else
     retnptr = reinterpret_cast<void*>(context->uc_mcontext.arm_pc);
