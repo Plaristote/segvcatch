@@ -28,6 +28,8 @@ typedef void (*handler)(const hardware_exception_info& info);
    */
 void init_segv(handler h = 0);
 
+void init_ctrlc(handler h = 0);
+
 /*! Initialize floating point error handler.
     \param h - optional user's signal handler. By default used an internal signal handler to throw
  std::runtime_error.*/

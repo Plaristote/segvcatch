@@ -146,6 +146,18 @@ do								\
   }								\
 while (0)  
 
+#  define INIT_CTRLC						\
+do								\
+  {								\
+    struct kernel_sigaction act;				\
+    act.k_sa_sigaction = _Jv_catch_ctrlc;			\
+    sigemptyset (&act.k_sa_mask);				\
+    act.k_sa_flags = SA_SIGINFO|0x4000000;			\
+    act.k_sa_restorer = restore_rt;				\
+    syscall (SYS_rt_sigaction, SIGINT, &act, NULL, _NSIG / 8);	\
+  }								\
+while (0)
+
 #  define INIT_FPE						\
 do								\
   {								\

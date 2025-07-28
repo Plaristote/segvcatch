@@ -41,4 +41,14 @@ class floating_point_error : public hardware_exception {
         : hardware_exception(what_arg, info) {}
 };
 
+class interrupted_by_the_user : public hardware_exception {
+  public:
+    interrupted_by_the_user(const std::string &what_arg)
+        : hardware_exception(what_arg) {}
+
+    interrupted_by_the_user(const std::string &what_arg,
+                            hardware_exception_info info) noexcept
+        : hardware_exception(what_arg, info) {}
+};
+
 } // namespace segvcatch
