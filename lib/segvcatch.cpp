@@ -192,7 +192,7 @@ SIGNAL_HANDLER(catch_ctrlc) {
     ucontext_t *context = (ucontext_t *)_p;
 
 #ifdef __aarch64__
-    retnptr = context->uc_mcontext.pc;
+    retnptr = reinterpret_cast<void *>(context->uc_mcontext.pc);
     context->uc_mcontext.pc = (uintptr_t)in_context_signal_handler_ctrlc;
 #else
     retnptr = reinterpret_cast<void *>(context->uc_mcontext.arm_pc);
