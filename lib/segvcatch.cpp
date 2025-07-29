@@ -81,9 +81,19 @@ segvcatch::hardware_exception_info hwinfo;
 
 static void call_handle_segv() { handle_segv(hwinfo); }
 
+static void call_handle_ctrlc() { handle_ctrlc(hwinfo); }
+
 #ifdef __aarch64__
 static void __attribute__((naked)) in_context_signal_handler() {
     handle_segv(hwinfo);
+
+    // This code should not be executed
+    default_segv(hwinfo);
+    asm("");
+}
+
+static void __attribute__((naked)) in_context_signal_handler_ctrlc() {
+    handle_ctrlc(hwinfo);
 
     // This code should not be executed
     default_segv(hwinfo);
@@ -96,6 +106,14 @@ static void __attribute__((naked)) in_context_signal_handler() {
 
     // call _handle_segv
     asm("mov pc, %0" : : "r"(call_handle_segv) : "memory");
+}
+
+static void __attribute__((naked)) in_context_signal_handler_ctrlc() {
+    // save return address
+    asm("ldr r0, %0\npush {r0}\n" : "=m"(retnptr) : : "memory");
+
+    // call _handle_ctrlc
+    asm("mov pc, %0" : : "r"(call_handle_ctrlc) : "memory");
 }
 #endif
 
