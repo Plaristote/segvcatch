@@ -33,7 +33,7 @@ TEST(Segvcatch, InitSegv) {
     }
 
     try {
-#ifndef __arm__ // TODO
+#ifndef __ARM_ARCH // TODO
         test::divide_by_zero();
 #endif
     } catch (const segvcatch::hardware_exception &e) {
