@@ -167,6 +167,23 @@ SIGNAL_HANDLER(catch_segv) {
 #endif
 #endif
 
+#ifdef __ARM_ARCH
+SIGNAL_HANDLER(catch_ctrlc) {
+    unblock_signal(SIGINT);
+    MAKE_THROW_FRAME(nullp);
+    ucontext_t *context = (ucontext_t *)_p;
+
+#ifdef __aarch64__
+    retnptr = context->uc_mcontext.pc;
+    context->uc_mcontext.pc = (uintptr_t)in_context_signal_handler_ctrlc;
+#else
+    retnptr = reinterpret_cast<void *>(context->uc_mcontext.arm_pc);
+    context->uc_mcontext.arm_pc = (uintptr_t)in_context_signal_handler_ctrlc;
+#endif
+
+    hwinfo.addr = retnptr;
+}
+#else
 SIGNAL_HANDLER(catch_ctrlc) {
     unblock_signal(SIGINT);
     MAKE_THROW_FRAME(nullp);
@@ -177,6 +194,7 @@ SIGNAL_HANDLER(catch_ctrlc) {
     retnptr = (void *)context->uc_mcontext.gregs[REG_RIP];
     context->uc_mcontext.gregs[REG_RIP] = (greg_t)in_context_signal_handler_ctrlc;
 }
+#endif
 
 #ifdef HANDLE_FPE
 #ifdef __ARM_ARCH
