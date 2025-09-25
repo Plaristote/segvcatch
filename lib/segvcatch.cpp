@@ -27,6 +27,10 @@ segvcatch::handler handler_fpe = 0;
 #include "x86_64-signal.h"
 #endif /*__x86_64__*/
 
+#ifdef __ARM_ARCH
+#include "aarch-signal.h"
+#endif /*__ARM_ARCH*/
+
 #endif /*defined __GNUC__ && __linux*/
 
 void default_segv()
@@ -70,12 +74,36 @@ static void unblock_signal(int signum __attribute__((__unused__)))
 
 #ifdef HANDLE_SEGV
 
+#ifdef __ARM_ARCH
+static void __attribute__((naked)) in_context_signal_handler()
+{
+    handle_segv();
+
+    // This code should not be executed
+    default_segv();
+    asm("");
+}
+
+SIGNAL_HANDLER(catch_segv)
+{
+    unblock_signal(SIGSEGV);
+    MAKE_THROW_FRAME(nullp);
+    ucontext_t *context = (ucontext_t *)_p;
+
+#ifdef __aarch64__
+    context->uc_mcontext.pc = (uintptr_t)in_context_signal_handler;
+#else
+    context->uc_mcontext.arm_pc = (uintptr_t)in_context_signal_handler;
+#endif
+}
+#else
 SIGNAL_HANDLER(catch_segv)
 {
     unblock_signal(SIGSEGV);
     MAKE_THROW_FRAME(nullp);
     handle_segv();
 }
+#endif
 #endif
 
 #ifdef HANDLE_FPE

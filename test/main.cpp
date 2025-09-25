@@ -23,6 +23,10 @@ int main(int argc, char *argv[])
 
     try
     {
+        /*
+        * In my tests with ARM, this try-catch block is optimized away by the compiler without some other code that can throw an exception.
+        */
+        std::cout << "Do not optimize away the try-catch block!" << std::endl;
         *(int*) 0 = 0;
     }
     catch (std::exception& e)
